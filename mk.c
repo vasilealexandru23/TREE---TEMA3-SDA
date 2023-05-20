@@ -1,13 +1,14 @@
+#include "Trie.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Trie.h"
 
 #define OPERATION_LEN 100
 #define MAX_WORD 100
 #define MAX_FILE_NAME 100
 
-void insert(char *word, trie_t *trie) {
+void insert(char *word, trie_t *trie)
+{
 	/* Alloc memory for a copy of the current word. */
 	char *copy_word = malloc(strlen(word) + 1);
 	DIE(!copy_word, "Alloc for copy of word failed!");
@@ -18,25 +19,30 @@ void insert(char *word, trie_t *trie) {
 	free(copy_word);
 }
 
-void remove_word(char *word, trie_t *trie) {
+void remove_word(char *word, trie_t *trie)
+{
+	/* Remove the word from dictionary. */
 	trie_remove(trie, word);
 }
 
-void load_file(char *file_name, trie_t *trie) {
-	FILE *fin;
-	fin = fopen(file_name, "rt");
+void load_file(char *file_name, trie_t *trie)
+{
+	/* Open the file and chekc if it failed. */
+	FILE *fin = fopen(file_name, "rt");
 	DIE(!fin, "Failed to load the file\n");
 
+	/* Read every word from file and insert in dictionary. */
 	char word[100];
-	while (fscanf(fin, "%s", word) != EOF) {
-		insert(word, trie);	
-	}
+	while (fscanf(fin, "%s", word) != EOF)
+		insert(word, trie);
 
+	/* Close the file. */
 	fclose(fin);
 	// printf("File %s succesfully loaded\n", file_name);
 }
 
-void autocorrect(trie_node_t *curr_node, char *word, int k, int *words_found) {
+void autocorrect(trie_node_t *curr_node, char *word, int k, int *words_found)
+{
 	if (!strlen(word)) {
 		if (curr_node && curr_node->end_of_word) {
 			printf("%s\n", (char *)curr_node->value);
@@ -50,17 +56,22 @@ void autocorrect(trie_node_t *curr_node, char *word, int k, int *words_found) {
 	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i) {
 		if (curr_node->children[i]) {
 			if (i == first_letter) {
-				autocorrect(curr_node->children[i], word + 1, k, words_found);
+				autocorrect(curr_node->children[i], word + 1, k,
+							words_found);
 			} else if (k) {
-				autocorrect(curr_node->children[i], word + 1, k - 1, words_found);
+				autocorrect(curr_node->children[i], word + 1,
+							k - 1, words_found);
 			}
 		}
 	}
 }
 
-char *smallest_lexic(trie_node_t* curr_node) {
+char *smallest_lexic(trie_node_t *curr_node)
+{
+	/* Check if we found a word in the dictionary. */
 	if (curr_node->end_of_word)
 		return curr_node->value;
+
 	int first_pos = 0;
 	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i) {
 		if (curr_node->children[i]) {
@@ -73,7 +84,8 @@ char *smallest_lexic(trie_node_t* curr_node) {
 	return NULL;
 }
 
-void shortest_word(trie_node_t *curr_node, char **ans) {
+void shortest_word(trie_node_t *curr_node, char **ans)
+{
 	if (curr_node->end_of_word == 1) {
 		if ((*ans) == NULL)
 			(*ans) = curr_node->value;
@@ -84,11 +96,12 @@ void shortest_word(trie_node_t *curr_node, char **ans) {
 
 	/* RUN dfs. */
 	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i)
-		if (curr_node->children[i] != NULL)
+		if (curr_node->children[i])
 			shortest_word(curr_node->children[i], ans);
 }
 
-void most_freq_word(trie_node_t *curr_node, char **ans, int *best_freq) {
+void most_freq_word(trie_node_t *curr_node, char **ans, int *best_freq)
+{
 	if (curr_node->end_of_word == 1) {
 		if ((*ans) == NULL) {
 			(*ans) = curr_node->value;
@@ -96,31 +109,33 @@ void most_freq_word(trie_node_t *curr_node, char **ans, int *best_freq) {
 		} else if (curr_node->freq > (*best_freq)) {
 			(*ans) = curr_node->value;
 			(*best_freq) = curr_node->freq;
-		} else if (curr_node->freq == (*best_freq) && strcmp(curr_node->value, (*ans)) < 0) {
+		} else if (curr_node->freq == (*best_freq) &&
+			   strcmp(curr_node->value, (*ans)) < 0) {
 			(*ans) = curr_node->value;
 		}
 	}
 
 	/* RUN dfs. */
 	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i)
-		if (curr_node->children[i] != NULL)
-			most_freq_word(curr_node->children[i], ans, best_freq);	
+		if (curr_node->children[i])
+			most_freq_word(curr_node->children[i], ans, best_freq);
 }
 
-void autocomplete(trie_t *trie, char *prefix, int crit) {
+void autocomplete(trie_t *trie, char *prefix, int crit)
+{
 	trie_node_t *curr_node = trie->root;
 	while (strlen(prefix) != 0) {
 		int first_letter = prefix[0] - 'a';
-		if (curr_node->children[first_letter] == NULL) {
+		if (!curr_node->children[first_letter]) {
 			printf("No words found\n");
 			return;
 		}
 		curr_node = curr_node->children[first_letter];
 		prefix = prefix + 1;
 	}
-	if (curr_node == NULL) {
+	if (!curr_node) {
 		printf("No words found\n");
-		return;	
+		return;
 	}
 
 	if (crit == 1 || crit == 0) {
@@ -152,7 +167,7 @@ void autocomplete(trie_t *trie, char *prefix, int crit) {
 int main(void)
 {
 	char operation[OPERATION_LEN];
-	trie_t* trie = trie_create();
+	trie_t *trie = trie_create();
 
 	while (1) {
 		scanf("%s", operation);
@@ -162,16 +177,16 @@ int main(void)
 			load_file(file_name, trie);
 		} else if (!strcmp(operation, "INSERT")) {
 			char word[MAX_WORD];
-			scanf("%s", word);	
+			scanf("%s", word);
 			insert(word, trie);
 		} else if (!strcmp(operation, "REMOVE")) {
 			char word[MAX_WORD];
-			scanf("%s", word);	
+			scanf("%s", word);
 			remove_word(word, trie);
 		} else if (!strcmp(operation, "AUTOCORRECT")) {
 			char word[MAX_WORD];
 			int k;
-			scanf("%s %d", word, &k);	
+			scanf("%s %d", word, &k);
 			int words_found = 0;
 			autocorrect(trie->root, word, k, &words_found);
 			if (!words_found)
@@ -181,7 +196,7 @@ int main(void)
 			int crit;
 			scanf("%s %d", word, &crit);
 			autocomplete(trie, word, crit);
-		} else if(!strcmp(operation, "EXIT")) {
+		} else if (!strcmp(operation, "EXIT")) {
 			trie_free(&trie);
 			break;
 		}

@@ -19,43 +19,45 @@
 
 typedef struct trie_node_t trie_node_t;
 struct trie_node_t {
-    /* Value associated with key (set if end_of_word = 1) */
-    void* value;
+	/* Value associated with key (set if end_of_word = 1) */
+	void *value;
 
-    /* 1 if current node marks the end of a word, 0 otherwise */
-    int end_of_word;
+	/* 1 if current node marks the end of a word, 0 otherwise */
+	int end_of_word;
 
-    /* Keep the frequency of a word. */
-    int freq;
+	/* Keep the frequency of a word. */
+	int freq;
 
-    trie_node_t** children;
-    int n_children;
+	trie_node_t **children;
+	int n_children;
 };
 
 typedef struct trie_t trie_t;
 struct trie_t {
-    trie_node_t* root;
+	/* Root of the trie. */
+	trie_node_t *root;
 
-    /* Callback to free value associated with key, should be called when freeing */
-    void (*free_value_cb)(void*);
-
-    /* Optional - number of nodes, useful to test correctness */
-    int nNodes;
+	/* Number of nodes, useful to test correctness. */
+	int nodes;
 };
 
+/* Function that allocates memory for a node in the trie. */
+trie_node_t *trie_create_node(void);
 
-trie_node_t* trie_create_node();
+/* Function that allocates memory for a trie. */
+trie_t *trie_create(void);
 
-trie_t* trie_create();
+/* Function that inserts in a trie a pair <key, value>. */
+void trie_insert(trie_t *trie, char *key, char *value);
 
-void trie_insert(trie_t* trie, char* key, char* value);
-
+/* Function that frees the memory of a node of a trie. */
 void trie_node_free(trie_node_t **node);
 
 int __trie_remove(trie_t *trie, trie_node_t *curr_node, char *key);
 
-void trie_remove(trie_t* trie, char* key);
+void trie_remove(trie_t *trie, char *key);
 
-void trie_free(trie_t** pTrie);
+/* Function that frees the memory of a trie. */
+void trie_free(trie_t **trie);
 
 #endif /* TRIE_H_ */
