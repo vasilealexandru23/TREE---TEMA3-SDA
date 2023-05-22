@@ -14,13 +14,13 @@
 		}												\
 	} while (0)
 
-typedef struct bst_node_t bst_node_t;
-struct bst_node_t {
+typedef struct kdt_node_t kdt_node_t;
+struct kdt_node_t {
 	/* left child */
-	bst_node_t *left;
+	kdt_node_t *left;
 
 	/* right child */
-	bst_node_t *right;
+	kdt_node_t *right;
 
 	/* Dimension of the vector space (R^k). */
 	unsigned int dim;
@@ -29,10 +29,10 @@ struct bst_node_t {
 	void *coordinates;
 };
 
-typedef struct bst_tree_t bst_tree_t;
-struct bst_tree_t {
+typedef struct kdt_tree_t kdt_tree_t;
+struct kdt_tree_t {
 	/* root of the tree */
-	bst_node_t  *root;
+	kdt_node_t  *root;
 
 	 /* Type of coordinates for a point. */
 	size_t data_size;
@@ -41,14 +41,19 @@ struct bst_tree_t {
 	unsigned int dimensions;
 };
 
-bst_node_t *__bst_node_create(bst_tree_t *bst_tree, void *data);
+/* Function that creates a node for the kdtree. */
+kdt_node_t *kdt_node_create(kdt_tree_t *kdt_tree, void *data);
 
-bst_tree_t *bst_tree_create(size_t data_size);
+/* Function that creates the kdtree. */
+kdt_tree_t *kdt_tree_create(size_t data_size);
 
-void bst_tree_insert(bst_tree_t *bst_tree, void *data);
+/* Function that inserts data in the kdtree. */
+void kdt_tree_insert(kdt_tree_t *kdt_tree, void *data);
 
-void __bst_tree_free(bst_node_t *bst_node);
+/* Function that frees the memory of a node. */
+void kdt_node_free(kdt_node_t *kdt_node);
 
-void bst_tree_free(bst_tree_t *bst_tree);
+/* Function that frees the memory of a kdtree. */
+void kdt_tree_free(kdt_tree_t *kdt_tree);
 
 #endif /* K_DTREE_H_ */

@@ -48,8 +48,12 @@ void trie_insert(trie_t *trie, char *key, char *value)
 		curr_node = curr_node->children[first_letter];
 		key = key + 1;
 	}
+
 	if (!curr_node->freq) {
-		curr_node->value = malloc(strlen(value) + 1);
+		if (!curr_node->value) {
+			free(curr_node->value);
+			curr_node->value = malloc(strlen(value) + 1);
+		}
 		memcpy(curr_node->value, value, strlen(value) + 1);
 		curr_node->end_of_word = 1;
 	}
@@ -58,14 +62,18 @@ void trie_insert(trie_t *trie, char *key, char *value)
 
 void trie_node_free(trie_node_t **node)
 {
+	/* Check if the node exists. */
 	if ((*node) == NULL)
 		return;
+
+	/* Erase all of the node's children. */
 	for (int i = 0; i < ALPHABET_SIZE; ++i)
 		if ((*node)->children[i])
 			trie_node_free(&(*node)->children[i]);
+
+	/* Erase data. */
 	free((*node)->children);
-	if ((*node)->value)
-		free((*node)->value);
+	free((*node)->value);
 	free((*node));
 	*node = NULL;
 }
@@ -75,6 +83,7 @@ int __trie_remove(trie_t *trie, trie_node_t *curr_node, char *key)
 	if (strlen(key) == 0) {
 		if (curr_node->end_of_word == 1) {
 			curr_node->end_of_word = 0;
+			curr_node->freq = 0;
 			return (curr_node->n_children == 0);
 		}
 		return 0;

@@ -1,44 +1,45 @@
-#include "Trie.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Trie.h"
 
 #define OPERATION_LEN 100
 #define MAX_WORD 100
 #define MAX_FILE_NAME 100
 
-void insert(char *word, trie_t *trie)
+void insert(char *word, trie_t *words_history)
 {
 	/* Alloc memory for a copy of the current word. */
 	char *copy_word = malloc(strlen(word) + 1);
 	DIE(!copy_word, "Alloc for copy of word failed!");
 	strcpy(copy_word, word);
-	trie_insert(trie, word, copy_word);
+
+	/* Add in the user's history the word. */
+	trie_insert(words_history, word, copy_word);
 
 	/* Free memory allocated for the copy. */
 	free(copy_word);
 }
 
-void remove_word(char *word, trie_t *trie)
+void remove_word(char *word, trie_t *words_history)
 {
-	/* Remove the word from dictionary. */
-	trie_remove(trie, word);
+	/* Remove the word from the user's history. */
+	trie_remove(words_history, word);
 }
 
-void load_file(char *file_name, trie_t *trie)
+void load_file(char *file_name, trie_t *words_history)
 {
-	/* Open the file and chekc if it failed. */
+	/* Open the file and check if it failed. */
 	FILE *fin = fopen(file_name, "rt");
 	DIE(!fin, "Failed to load the file\n");
 
-	/* Read every word from file and insert in dictionary. */
-	char word[100];
+	/* Read every word from file and insert in the user's history. */
+	char word[MAX_WORD];
 	while (fscanf(fin, "%s", word) != EOF)
-		insert(word, trie);
+		insert(word, words_history);
 
 	/* Close the file. */
 	fclose(fin);
-	// printf("File %s succesfully loaded\n", file_name);
 }
 
 void autocorrect(trie_node_t *curr_node, char *word, int k, int *words_found)
@@ -51,7 +52,7 @@ void autocorrect(trie_node_t *curr_node, char *word, int k, int *words_found)
 		return;
 	}
 
-	int first_letter = word[0] - 'a';
+	unsigned int first_letter = word[0] - 'a';
 
 	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i) {
 		if (curr_node->children[i]) {
@@ -72,24 +73,17 @@ char *smallest_lexic(trie_node_t *curr_node)
 	if (curr_node->end_of_word)
 		return curr_node->value;
 
-	int first_pos = 0;
-	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i) {
-		if (curr_node->children[i]) {
-			first_pos = i;
-			break;
-		}
-	}
-	if (first_pos != -1)
-		return smallest_lexic(curr_node->children[first_pos]);
+	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i)
+		if (curr_node->children[i])
+			return smallest_lexic(curr_node->children[i]);
+
 	return NULL;
 }
 
 void shortest_word(trie_node_t *curr_node, char **ans)
 {
-	if (curr_node->end_of_word == 1) {
-		if ((*ans) == NULL)
-			(*ans) = curr_node->value;
-		else if (strlen((*ans)) > strlen((char *)curr_node->value))
+	if (curr_node->end_of_word) {
+		if (!(*ans) || strlen((*ans)) > strlen((char *)curr_node->value))
 			(*ans) = curr_node->value;
 		return;
 	}
@@ -102,11 +96,8 @@ void shortest_word(trie_node_t *curr_node, char **ans)
 
 void most_freq_word(trie_node_t *curr_node, char **ans, int *best_freq)
 {
-	if (curr_node->end_of_word == 1) {
-		if ((*ans) == NULL) {
-			(*ans) = curr_node->value;
-			(*best_freq) = curr_node->freq;
-		} else if (curr_node->freq > (*best_freq)) {
+	if (curr_node->end_of_word) {
+		if (!(*ans) || curr_node->freq > (*best_freq)) {
 			(*ans) = curr_node->value;
 			(*best_freq) = curr_node->freq;
 		} else if (curr_node->freq == (*best_freq) &&
@@ -124,18 +115,20 @@ void most_freq_word(trie_node_t *curr_node, char **ans, int *best_freq)
 void autocomplete(trie_t *trie, char *prefix, int crit)
 {
 	trie_node_t *curr_node = trie->root;
+
+	/* Get the node that stores the given prefix. */
 	while (strlen(prefix) != 0) {
 		int first_letter = prefix[0] - 'a';
 		if (!curr_node->children[first_letter]) {
 			printf("No words found\n");
+			if (!crit) {
+				printf("No words found\n");
+				printf("No words found\n");
+			}
 			return;
 		}
 		curr_node = curr_node->children[first_letter];
 		prefix = prefix + 1;
-	}
-	if (!curr_node) {
-		printf("No words found\n");
-		return;
 	}
 
 	if (crit == 1 || crit == 0) {
@@ -167,37 +160,37 @@ void autocomplete(trie_t *trie, char *prefix, int crit)
 int main(void)
 {
 	char operation[OPERATION_LEN];
-	trie_t *trie = trie_create();
+	trie_t *words_history = trie_create();
 
 	while (1) {
 		scanf("%s", operation);
 		if (!strcmp(operation, "LOAD")) {
 			char file_name[MAX_FILE_NAME];
 			scanf("%s", file_name);
-			load_file(file_name, trie);
+			load_file(file_name, words_history);
 		} else if (!strcmp(operation, "INSERT")) {
 			char word[MAX_WORD];
 			scanf("%s", word);
-			insert(word, trie);
+			insert(word, words_history);
 		} else if (!strcmp(operation, "REMOVE")) {
 			char word[MAX_WORD];
 			scanf("%s", word);
-			remove_word(word, trie);
+			remove_word(word, words_history);
 		} else if (!strcmp(operation, "AUTOCORRECT")) {
 			char word[MAX_WORD];
 			int k;
 			scanf("%s %d", word, &k);
 			int words_found = 0;
-			autocorrect(trie->root, word, k, &words_found);
+			autocorrect(words_history->root, word, k, &words_found);
 			if (!words_found)
 				printf("No words found\n");
 		} else if (!strcmp(operation, "AUTOCOMPLETE")) {
 			char word[MAX_WORD];
 			int crit;
 			scanf("%s %d", word, &crit);
-			autocomplete(trie, word, crit);
+			autocomplete(words_history, word, crit);
 		} else if (!strcmp(operation, "EXIT")) {
-			trie_free(&trie);
+			trie_free(&words_history);
 			break;
 		}
 	}

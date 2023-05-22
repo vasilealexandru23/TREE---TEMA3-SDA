@@ -8,28 +8,41 @@
 #define MAX_FILE_NAME 100
 #define MAX_DIST 100000000
 
-void load_file(char *file_name, bst_tree_t *tree)
+void load_file(char *file_name, kdt_tree_t *tree)
 {
 	/* Open the file and check if failed. */
 	FILE *fin;
 	fin = fopen(file_name, "rt");
 	DIE(!fin, "Failed to load the file\n");
 
-	int n, k;
-	fscanf(fin, "%d %d", &n, &k);
-	int *new_point = malloc(k * sizeof(int));
-	tree->dimensions = k;
-	while (n--) {
+	/* Read the number of vectors(points) and their dimension. */
+	int points, dim;
+	fscanf(fin, "%d %d", &points, &dim);
+	int *new_point = malloc(dim * sizeof(int));
+	tree->dimensions = dim;
+
+	/* Read and insert every point in the tree. */
+	while (points--) {
 		for (unsigned int i = 0; i < tree->dimensions; ++i)
 			fscanf(fin, "%d", &new_point[i]);
-		bst_tree_insert(tree, new_point);
+		kdt_tree_insert(tree, new_point);
 	}
 
+	/* Free the memory for aux variables and close the file. */
 	free(new_point);
 	fclose(fin);
 }
 
-void search_best_dist(bst_node_t *curr_node, int level, int *point,
+long euclidean_sq_dist(int *source, int *destination, unsigned int dim)
+{
+	long dist = 0;
+	for (unsigned int i = 0; i < dim; ++i)
+		dist += 1LL * (source[i] - destination[i]) *
+			(source[i] - destination[i]);
+	return dist;
+}
+
+void search_best_dist(kdt_node_t *curr_node, int level, int *point,
 					  long *best_sq_dist)
 {
 	if (!curr_node)
@@ -38,9 +51,7 @@ void search_best_dist(bst_node_t *curr_node, int level, int *point,
 	int *curr_point = curr_node->coordinates;
 
 	/* Compute distance beetween <source, destination> point. */
-	long dist = 0;
-	for (unsigned int i = 0; i < curr_node->dim; ++i)
-		dist += 1LL * (point[i] - curr_point[i]) * (point[i] - curr_point[i]);
+	long dist = euclidean_sq_dist(point, curr_point, curr_node->dim);
 
 	if (dist < *best_sq_dist)
 		*best_sq_dist = dist;
@@ -57,6 +68,7 @@ void search_best_dist(bst_node_t *curr_node, int level, int *point,
 
 	long diff = (curr_point[index] - point[index]) *
 			(curr_point[index] - point[index]);
+
 	if (diff < *best_sq_dist) {
 		if (next_node == 0)
 			search_best_dist(curr_node->right, level + 1, point, best_sq_dist);
@@ -65,18 +77,17 @@ void search_best_dist(bst_node_t *curr_node, int level, int *point,
 	}
 }
 
-void print_nearest_points(bst_node_t *curr_node, int level, int *point,
+void print_nearest_points(kdt_node_t *curr_node, int level, int *point,
 						  long *best_sq_dist, int minimal_dist)
 {
+	/* 97032 */
 	if (!curr_node)
 		return;
 
 	int *curr_point = curr_node->coordinates;
 
 	/* Compute distance beetween <source, destination> point. */
-	long dist = 0;
-	for (unsigned int i = 0; i < curr_node->dim; ++i)
-		dist += 1LL * (point[i] - curr_point[i]) * (point[i] - curr_point[i]);
+	long dist = euclidean_sq_dist(point, curr_point, curr_node->dim);
 
 	if (dist < *best_sq_dist)
 		*best_sq_dist = dist;
@@ -113,7 +124,7 @@ void print_nearest_points(bst_node_t *curr_node, int level, int *point,
 	}
 }
 
-void nearest_neighbour(bst_tree_t *tree)
+void nearest_neighbour(kdt_tree_t *tree)
 {
 	int *point = malloc(tree->dimensions * tree->data_size);
 
@@ -129,7 +140,7 @@ void nearest_neighbour(bst_tree_t *tree)
 	free(point);
 }
 
-void search_points(bst_node_t *curr_node, int *intervals)
+void search_points(kdt_node_t *curr_node, int level, int *intervals)
 {
 	if (!curr_node)
 		return;
@@ -142,8 +153,18 @@ void search_points(bst_node_t *curr_node, int *intervals)
 			  curr_point[i] <= intervals[2 * i + 1]))
 			works++;
 
-	search_points(curr_node->left, intervals);
-	search_points(curr_node->right, intervals);
+	int index = level % curr_node->dim;
+
+	if (curr_point[index] >= intervals[2 * index + 1]) {
+		search_points(curr_node->left, level + 1, intervals);
+	} else if (curr_point[index] <= intervals[2 * index]) {
+		search_points(curr_node->right, level + 1, intervals);
+	} else if (curr_point[index] >= intervals[2 * index] &&
+		   curr_point[index] <= intervals[2 * index + 1]) {
+		search_points(curr_node->right, level + 1, intervals);
+		search_points(curr_node->left, level + 1, intervals);
+	}
+
 	if (works == 1) {
 		for (unsigned int i = 0; i < curr_node->dim; ++i)
 			printf("%d ", curr_point[i]);
@@ -151,19 +172,19 @@ void search_points(bst_node_t *curr_node, int *intervals)
 	}
 }
 
-void range_search(bst_tree_t *tree)
+void range_search(kdt_tree_t *tree)
 {
 	int *intervals = malloc(2 * tree->dimensions * tree->data_size);
 	for (unsigned int i = 0; i < 2 * tree->dimensions; ++i)
 		scanf("%d", &intervals[i]);
-	search_points(tree->root, intervals);
+	search_points(tree->root, 0, intervals);
 	free(intervals);
 }
 
 int main(void)
 {
 	char operation[OPERATION_LEN];
-	bst_tree_t *tree = bst_tree_create(sizeof(int));
+	kdt_tree_t *tree = kdt_tree_create(sizeof(int));
 	while (1) {
 		scanf("%s", operation);
 		if (!strcmp(operation, "LOAD")) {
@@ -175,7 +196,7 @@ int main(void)
 		} else if (!strcmp(operation, "RS")) {
 			range_search(tree);
 		} else if (!strcmp(operation, "EXIT")) {
-			bst_tree_free(tree);
+			kdt_tree_free(tree);
 			break;
 		}
 	}

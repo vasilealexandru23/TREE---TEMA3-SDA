@@ -19,16 +19,19 @@
 
 typedef struct trie_node_t trie_node_t;
 struct trie_node_t {
-	/* Value associated with key (set if end_of_word = 1) */
+	/* Value associated with key (set if end_of_word = 1). */
 	void *value;
 
-	/* 1 if current node marks the end of a word, 0 otherwise */
+	/* Value associated if current node marks the end of a word. */
 	int end_of_word;
 
-	/* Keep the frequency of a word. */
+	/* Value that stores the frequency of a word. */
 	int freq;
 
+	/* Vector of children. */
 	trie_node_t **children;
+
+	/* Number of suffixes for the current node. */
 	int n_children;
 };
 
@@ -53,8 +56,11 @@ void trie_insert(trie_t *trie, char *key, char *value);
 /* Function that frees the memory of a node of a trie. */
 void trie_node_free(trie_node_t **node);
 
+/* Auxiliar function which returns if the */
+/* <key> has suffixes and frees memory if it's the case. */
 int __trie_remove(trie_t *trie, trie_node_t *curr_node, char *key);
 
+/* Function that removes a pair <key, value> from the trie. */
 void trie_remove(trie_t *trie, char *key);
 
 /* Function that frees the memory of a trie. */
