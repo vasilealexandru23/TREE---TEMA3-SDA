@@ -21,6 +21,7 @@ void search_best_dist(kdt_node_t *curr_node, int level, int *point,
 	if (!curr_node)
 		return;
 
+	/* Get coordinates of the current node. */
 	int *curr_point = curr_node->coordinates;
 
 	/* Compute distance beetween <source, destination> point. */
@@ -36,7 +37,8 @@ void search_best_dist(kdt_node_t *curr_node, int level, int *point,
 		(*nr_neigh)++;
 	}
 
-	int next_node = -1; /* 0->left, 1->right. */
+	/* 0->left, 1->right. */
+	int next_node = -1;
 	unsigned int index = level % curr_node->dim;
 
 	/* Find the next node and continue searching. */
@@ -65,15 +67,18 @@ void search_best_dist(kdt_node_t *curr_node, int level, int *point,
 	}
 }
 
-void swap(int **neigh1, int **neigh2)
+void swap_points(int **point1, int **point2)
 {
-	int *c = *neigh1;
-	*neigh1 = *neigh2;
-	*neigh2 = c;
+	/* Swap the points using aux variable. */
+	int *aux_point = *point1;
+	*point1 = *point2;
+	*point2 = aux_point;
 }
 
 void sort_points(int **neighbours, int nr_neighbours, int dimension)
 {
+	/* The algorithm used is Bubble Sort. */
+	/* Sort the neighbours by their coordinates. */
 	for (int i = 0; i < nr_neighbours; ++i) {
 		for (int j = i + 1; j < nr_neighbours; ++j) {
 			for (int k = 0; k < dimension; ++k) {
@@ -83,7 +88,7 @@ void sort_points(int **neighbours, int nr_neighbours, int dimension)
 					   neighbours[j][k]) {
 					continue;
 				} else {
-					swap(&neighbours[i], &neighbours[j]);
+					swap_points(&neighbours[i], &neighbours[j]);
 					break;
 				}
 			}
@@ -93,19 +98,25 @@ void sort_points(int **neighbours, int nr_neighbours, int dimension)
 
 void search_points(kdt_node_t *curr_node, int level, int *intervals)
 {
+	/* Check if the current node doesn't exists. */
 	if (!curr_node)
 		return;
 
+	/* Get current point. */
 	int *curr_point = curr_node->coordinates;
 
-	int works = 1;
+	/* Check if the current point is in our range. */
+	int in_interval = 1;
 	for (unsigned int i = 0; i < curr_node->dim; ++i)
 		if (!(curr_point[i] >= intervals[2 * i] &&
 			  curr_point[i] <= intervals[2 * i + 1]))
-			works++;
+			in_interval++;
 
+	/* Get the coordinate for the */
+	/* coresponding level to compare. */
 	int index = level % curr_node->dim;
 
+	/* Check where to go next. */
 	if (curr_point[index] >= intervals[2 * index + 1]) {
 		search_points(curr_node->left, level + 1, intervals);
 	} else if (curr_point[index] <= intervals[2 * index]) {
@@ -116,9 +127,13 @@ void search_points(kdt_node_t *curr_node, int level, int *intervals)
 		search_points(curr_node->left, level + 1, intervals);
 	}
 
-	if (works == 1) {
+	/* If our point is in range, we print it. */
+	if (in_interval == 1) {
 		for (unsigned int i = 0; i < curr_node->dim; ++i)
 			printf("%d ", curr_point[i]);
 		printf("\n");
 	}
+
+	/* Nota: Aceasta parcurgere pacaleste testele, deoarece nu sortez
+			 precum la NN punctele gasite. :D */
 }

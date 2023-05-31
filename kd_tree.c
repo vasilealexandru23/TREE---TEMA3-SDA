@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "k-dtree.h"
+#include "kd_tree.h"
 
 kdt_node_t *kdt_node_create(kdt_tree_t *kdt_tree, void *data)
 {

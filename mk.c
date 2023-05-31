@@ -42,9 +42,12 @@ void load_file(char *file_name, trie_t *words_history)
 	fclose(fin);
 }
 
-void autocorrect(trie_node_t *curr_node, char *word, int k, int *words_found)
+void autocorrect(trie_node_t *curr_node, char *word,
+				 int changes, int *words_found)
 {
+	/* Check if we finished iterating over all chars in our word. */
 	if (!strlen(word)) {
+		/* If we found a word, we print it. */
 		if (curr_node && curr_node->end_of_word) {
 			printf("%s\n", (char *)curr_node->value);
 			(*words_found)++;
@@ -52,16 +55,19 @@ void autocorrect(trie_node_t *curr_node, char *word, int k, int *words_found)
 		return;
 	}
 
+	/* Get the index of the first letter */
+	/* in the alphabet of our current word. */
 	unsigned int first_letter = word[0] - 'a';
 
-	for (unsigned int i = 0; i < ALPHABET_SIZE; ++i) {
-		if (curr_node->children[i]) {
-			if (i == first_letter) {
-				autocorrect(curr_node->children[i], word + 1, k,
-							words_found);
-			} else if (k) {
-				autocorrect(curr_node->children[i], word + 1,
-							k - 1, words_found);
+	/* Iterate over all letters in the alphabet. */
+	for (unsigned int idx = 0; idx < ALPHABET_SIZE; ++idx) {
+		if (curr_node->children[idx]) {
+			if (idx == first_letter) {
+				autocorrect(curr_node->children[idx], word + 1,
+							changes, words_found);
+			} else if (changes) {
+				autocorrect(curr_node->children[idx], word + 1,
+							changes - 1, words_found);
 			}
 		}
 	}
@@ -86,7 +92,7 @@ void autocomplete(trie_t *trie, char *prefix, int crit)
 		prefix = prefix + 1;
 	}
 
-	/* Check every criteria. */
+	/* Check first criteria. */
 	if (crit == 1 || crit == 0) {
 		char *ans = smallest_lexic(curr_node);
 		if (ans)
@@ -94,6 +100,8 @@ void autocomplete(trie_t *trie, char *prefix, int crit)
 		else
 			printf("No words found\n");
 	}
+
+	/* Check second criteria. */
 	if (crit == 2 || crit == 0) {
 		char *ans = NULL;
 		shortest_word(curr_node, &ans);
@@ -102,6 +110,8 @@ void autocomplete(trie_t *trie, char *prefix, int crit)
 		else
 			printf("No words found\n");
 	}
+
+	/* Check third criteria. */
 	if (crit == 3 || crit == 0) {
 		char *ans = NULL;
 		int best_freq = -1;
@@ -115,9 +125,11 @@ void autocomplete(trie_t *trie, char *prefix, int crit)
 
 int main(void)
 {
-	char operation[OPERATION_LEN];
+	/* Create the words history structure. */
 	trie_t *words_history = trie_create();
 
+	/* Read operations from user until EXIT. */
+	char operation[OPERATION_LEN];
 	while (1) {
 		scanf("%s", operation);
 		if (!strcmp(operation, "LOAD")) {

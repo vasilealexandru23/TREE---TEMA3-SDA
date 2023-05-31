@@ -1,5 +1,5 @@
-#ifndef K_DTREE_H_
-#define K_DTREE_H_
+#ifndef KD_TREE_H_
+#define KD_TREE_H_
 #include <stdlib.h>
 #include <errno.h>
 
@@ -22,7 +22,7 @@ struct kdt_node_t {
 	/* right child */
 	kdt_node_t *right;
 
-	/* Dimension of the vector space (R^k). */
+	/* Dimension of the vector space (R^n). */
 	unsigned int dim;
 
 	/* The coordinates of the node(point). */
@@ -56,4 +56,4 @@ void kdt_node_free(kdt_node_t *kdt_node);
 /* Function that frees the memory of a kdtree. */
 void kdt_tree_free(kdt_tree_t *kdt_tree);
 
-#endif /* K_DTREE_H_ */
+#endif /* KD_TREE_H_ */

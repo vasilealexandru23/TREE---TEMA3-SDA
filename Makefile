@@ -14,7 +14,7 @@ mk: mk.c
 	$(CC) $(CFLAGS) mk.c Trie.c Trie.h mk_utils.c mk_utils.h -o mk
 
 kNN: kNN.c
-	$(CC) $(CFLAGS) kNN.c k-dtree.c k-dtree.h kNN_utils.c kNN_utils.h -o kNN
+	$(CC) $(CFLAGS) kNN.c kd_tree.c kd_tree.h kNN_utils.c kNN_utils.h -o kNN
 
 pack:
 	zip -FSr 314CA_AlexandruGabrielVasile_Tema3.zip README.md Makefile *.c *.h
